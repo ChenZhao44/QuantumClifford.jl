@@ -1,5 +1,5 @@
 using QuantumClifford
-using QuantumClifford: StabMixture, rowdecompose, PauliChannel, mul_left!, mul_right!
+using QuantumClifford: StabMixture, rowdecompose, PauliChannel, mul_left!, mul_right!, pauli_measure!
 using Test
 using InteractiveUtils
 using Random
@@ -35,6 +35,22 @@ end
 
     @test state.destabweights |> values |> collect == [1]
     @test state.destabweights |> keys |> collect == [([1],[1])]
+end
+
+@testset "Pauli Expectation for T-state" begin
+    tgate = pcT
+    state = StabMixture(S"X")
+    apply!(state, tgate)
+    @test expect(P"X", state) ≈ sqrt(1/2)
+end
+
+@testset "Measurement" begin
+    tgate = pcT
+    state = StabMixture(S"X")
+    apply!(state, tgate)
+    _, res1 = pauli_measure!(state, PauliMeasurement(P"X"))
+    _, res2 = pauli_measure!(state, PauliMeasurement(P"X"))
+    @test res1 == res2
 end
 
 ##

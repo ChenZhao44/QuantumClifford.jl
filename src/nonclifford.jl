@@ -132,7 +132,7 @@ function Base.show(io::IO, pc::PauliChannel)
 end
 
 function embed(n::Int,idx,pc::PauliChannel)
-    PauliChannel(map(p->(embed(n,idx,p[1]),embed(n,idx,p[2])),pc.paulis), pc.weights)
+(map(p->(embed(n,idx,p[1]),embed(n,idx,p[2])),pc.paulis), pc.weights)
 end
 
 nqubits(pc::PauliChannel) = nqubits(pc.paulis[1][1])
@@ -144,7 +144,7 @@ function apply!(state::StabMixture, gate::PauliChannel)
     tone = one(eltype(dict).parameters[2])
     newdict = typeof(dict)(tzero) # TODO jeez, this is ugly
     for ((dᵢ,dⱼ), χ) in dict # the state
-        for ((Pₗ,Pᵣ), w) in zip(gate.paulis,gate.weights) # the channel
+        for ((Pₗ,Pᵣ), w) in zip(gate.paulis, gate.weights) # the channel
             phaseₗ, dₗ, dₗˢᵗᵃᵇ = rowdecompose(Pₗ,stab)
             phaseᵣ, dᵣ, dᵣˢᵗᵃᵇ = rowdecompose(Pᵣ,stab)
             c = (dot(dₗˢᵗᵃᵇ,dᵢ) + dot(dᵣˢᵗᵃᵇ,dⱼ))*2
@@ -275,3 +275,62 @@ const pcT = UnitaryPauliChannel(
     (I, Z),
     ((1+exp(im*π/4))/2, (1-exp(im*π/4))/2)
 )
+
+struct sTGate <: AbstractPauliChannel
+    q::Int
+end
+
+function apply!(state::StabMixture, gate::sTGate)
+    q = gate.q
+    
+end
+
+function expect(p::PauliOperator, state::StabMixture)
+    dict = state.destabweights
+    stab = state.stab
+    α, b, c = rowdecompose(p, stab)
+    ret = 0
+    for ((di, dj), χ) in dict
+        if iseven(sum(di .⊻ dj .⊻ b))
+            ret += χ * (-1)^(dot(c, di))
+        end
+    end
+    ret *= im^α
+    return ret
+end
+
+apply!(state::StabMixture, pauli::PauliMeasurement) = pauli_measure!(state, pauli)[1]
+function pauli_measure!(state::StabMixture, pm::PauliMeasurement)
+    p = pm.pauli
+    dict = state.destabweights
+    stab = state.stab
+    tzero = zero(eltype(dict).parameters[2])
+    tone = one(eltype(dict).parameters[2])
+    newdict = typeof(dict)(tzero) # TODO jeez, this is ugly
+    α, b, c = rowdecompose(p, stab)
+    expectation = tzero
+    for ((di, dj), χ) in dict
+        if iseven(sum(di .⊻ dj .⊻ b))
+            expectation += χ * (-1)^(dot(c, di))
+        end
+    end
+    expectation *= im^α
+    p = (1 + real(expectation)) / 2
+    @show p
+    s = rand() < p ? 0 : 1
+    @show α, s
+    scale = iszero(s) ? p : 1-p
+    if !any(b)
+        for ((di, dj), χ) in dict
+            @show di, dj, c
+            if mod(2 * (dot(di, c) + s) + α, 4) == 0 && mod(2 * (dot(dj, c) + s) + α, 4) == 0
+                newdict[(di,dj)] += χ / scale
+            end
+        end
+    else
+        # TODO
+        error("not implemented yet")
+    end
+    state.destabweights = newdict
+    return state, s
+end
