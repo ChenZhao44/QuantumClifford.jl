@@ -6,6 +6,14 @@
 
 # News
 
+## v0.8.21 - 2024-03-05
+
+- Bump the `LDPCDecoders` dependency.
+
+## v0.8.20 - 2024-01-22
+
+- Significant additions to the `ECC` submodule, with constructors for a few new codes (`Toric` and  generic `CSS`); incorporating many syndrome decoding algorithms (thanks to the `PyQDecoders.jl` and `LDPCDecoders.jl` packages); and providing a convenient API for evaluating code performance in different settings through the new `evaluate_decoder` function.
+
 ## v0.8.19 - 2023-12-16
 
 - Bumping up the lower bounds of many dependencies and adding lower-bound compatibility checks to CI.
@@ -190,7 +198,7 @@
 
 ## v0.5.5 - 2022-07-05
 
-- **(breaking fix)** `CliffordOperator` constructor called on a square tableau occasionally resulted in incorrect results due to row-reordering during cannonicalization.
+- **(breaking fix)** `CliffordOperator` constructor called on a square tableau occasionally resulted in incorrect results due to row-reordering during canonicalization.
 - Continuing static analysis fixes thanks to JET.
 - Optimization of `canonicalize_clip!`, now resulting in much fewer allocations.
 
